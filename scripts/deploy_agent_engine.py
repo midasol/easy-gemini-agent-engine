@@ -59,18 +59,10 @@ def main():
     )
 
     # ---------------------------------------------------------------
-    # Load API Key from Secret Manager
+    # Agent Engine uses service account auth (not API key).
+    # No env vars needed for authentication.
     # ---------------------------------------------------------------
-    from google.cloud import secretmanager
-
-    print("Loading API key from Secret Manager...")
-    sm_client = secretmanager.SecretManagerServiceClient()
-    secret_name = f"projects/{PROJECT_ID}/secrets/gemini-api-key/versions/latest"
-    response = sm_client.access_secret_version(request={"name": secret_name})
-    api_key = response.payload.data.decode("UTF-8").strip()
-    print("  API key loaded successfully")
-
-    env_vars = {"GEMINI_API_KEY": api_key}
+    env_vars = {}
 
     # ---------------------------------------------------------------
     # Prepare agent for deployment

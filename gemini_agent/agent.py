@@ -81,9 +81,14 @@ class GlobalGemini(Gemini):
             ),
         }
 
-        if api_key:
+        # Agent Engine (Vertex AI) does NOT support API keys.
+        # Use API key only for local development (no project set).
+        # On Agent Engine, always use service account auth + global endpoint.
+        is_agent_engine = bool(os.getenv("GOOGLE_CLOUD_PROJECT"))
+
+        if api_key and not is_agent_engine:
             client_kwargs["api_key"] = api_key
-            logger.info("Using API key authentication")
+            logger.info("Using API key authentication (local)")
         else:
             client_kwargs["project"] = project
             client_kwargs["location"] = "global"
