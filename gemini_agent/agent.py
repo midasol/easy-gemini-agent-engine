@@ -24,6 +24,11 @@ from google.adk.tools import google_search, url_context
 from google.adk.tools.base_tool import BaseTool
 from google.genai import Client, types
 
+from gemini_agent.workspace.drive_tools import search_drive
+from gemini_agent.workspace.docs_tools import read_document
+from gemini_agent.workspace.slides_tools import read_presentation
+from gemini_agent.workspace.sheets_tools import read_spreadsheet
+
 # ---------------------------------------------------------------------------
 # Secret Manager helper
 # ---------------------------------------------------------------------------
@@ -141,9 +146,16 @@ GENERATE_CONTENT_CONFIG = types.GenerateContentConfig(
 root_agent = Agent(
     model=MODEL,
     name="gemini_agent",
-    description="General-purpose assistant with web search, URL reading, and code execution capabilities",
-    instruction="You are a helpful assistant. Use the available tools to provide accurate and comprehensive answers.",
-    tools=[google_search, url_context, code_execution],
+    description="General-purpose assistant with web search, URL reading, code execution, and Google Workspace document access",
+    instruction=(
+        "You are a helpful assistant. Use the available tools to provide accurate and comprehensive answers. "
+        "When users ask about their documents, use search_drive to find files, then use read_document, "
+        "read_presentation, or read_spreadsheet to read the content."
+    ),
+    tools=[
+        google_search, url_context, code_execution,
+        search_drive, read_document, read_presentation, read_spreadsheet,
+    ],
     generate_content_config=GENERATE_CONTENT_CONFIG,
 )
 
