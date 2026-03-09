@@ -16,6 +16,11 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", secrets.token_hex(32))
 
+# Cloud Run terminates TLS at the load balancer, so Flask sees HTTP.
+# This tells Flask to trust X-Forwarded-Proto header and generate HTTPS URLs.
+from werkzeug.middleware.proxy_fix import ProxyFix
+app.wsgi_app = ProxyFix(app.wsgi_app, x_proto=1, x_host=1)
+
 PROJECT_ID = os.getenv("GOOGLE_CLOUD_PROJECT", "")
 
 SCOPES = [
