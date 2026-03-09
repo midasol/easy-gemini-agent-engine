@@ -86,6 +86,9 @@ def main():
         "google-cloud-secret-manager>=2.16.0",
         "nest-asyncio>=1.5.0",
         "python-dotenv>=1.0.0",
+        "google-api-python-client>=2.100.0",
+        "google-auth>=2.20.0",
+        "google-auth-oauthlib>=1.0.0",
     ]
 
     RESOURCE_LIMITS = {"cpu": "2", "memory": "4Gi"}
