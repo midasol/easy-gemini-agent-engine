@@ -38,6 +38,11 @@ APIS=(
     "storage.googleapis.com"
     "iam.googleapis.com"
     "iamcredentials.googleapis.com"
+    "drive.googleapis.com"
+    "docs.googleapis.com"
+    "slides.googleapis.com"
+    "sheets.googleapis.com"
+    "run.googleapis.com"
 )
 for api in "${APIS[@]}"; do
     log_info "Enabling $api..."
@@ -141,6 +146,28 @@ echo ""
 echo "  echo 'YOUR_GEMINI_API_KEY' | gcloud secrets versions add $SECRET_NAME --data-file=-"
 echo ""
 
+# Step 7: Create Secret for OAuth Client Config
+echo ""
+echo "============================================================================"
+echo "Step 7: Setting up OAuth Client Config Secret"
+echo "============================================================================"
+OAUTH_SECRET_NAME="oauth-client-config"
+if gcloud secrets describe $OAUTH_SECRET_NAME --project=$PROJECT_ID > /dev/null 2>&1; then
+    log_warning "Secret $OAUTH_SECRET_NAME already exists."
+else
+    log_info "Creating secret $OAUTH_SECRET_NAME..."
+    gcloud secrets create $OAUTH_SECRET_NAME \
+        --project=$PROJECT_ID \
+        --replication-policy="automatic"
+    log_success "Secret created."
+fi
+
+log_info "Add your OAuth client config:"
+echo ""
+echo "  echo '{\"client_id\": \"YOUR_CLIENT_ID\", \"client_secret\": \"YOUR_CLIENT_SECRET\"}' | \\"
+echo "    gcloud secrets versions add $OAUTH_SECRET_NAME --data-file=-"
+echo ""
+
 # Summary
 echo ""
 echo "============================================================================"
@@ -155,5 +182,9 @@ log_success "Secret Name: $SECRET_NAME"
 echo ""
 echo "Next Steps:"
 echo "  1. Add Gemini API key to Secret Manager"
-echo "  2. Run: python scripts/deploy_agent_engine.py --project $PROJECT_ID"
+echo "  2. Create OAuth Client ID in Cloud Console (APIs & Credentials > Web application)"
+echo "  3. Add OAuth client config to Secret Manager (see above)"
+echo "  4. Deploy OAuth callback: cd cloud-run-oauth-callback && bash deploy.sh"
+echo "  5. Add callback URL as redirect URI in OAuth Client ID settings"
+echo "  6. Deploy Agent Engine: python scripts/deploy_agent_engine.py --project $PROJECT_ID"
 echo ""
