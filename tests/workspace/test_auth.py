@@ -1,3 +1,4 @@
+import hashlib
 import json
 from unittest.mock import MagicMock, patch
 
@@ -33,8 +34,9 @@ class TestGetUserCredentials:
         assert creds.refresh_token == "fake-refresh"
         assert creds.client_id == "fake-id"
         assert creds.client_secret == "fake-secret"
+        user_hash = hashlib.sha256("user123".encode()).hexdigest()[:16]
         mock_client.access_secret_version.assert_called_once_with(
-            request={"name": "projects/test-project/secrets/workspace-token-user123/versions/latest"}
+            request={"name": f"projects/test-project/secrets/workspace_token_{user_hash}/versions/latest"}
         )
 
     @patch("gemini_agent.workspace.auth._get_secret_client")

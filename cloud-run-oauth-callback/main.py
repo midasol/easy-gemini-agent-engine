@@ -3,6 +3,7 @@
 Handles OAuth consent flow and stores per-user refresh tokens in Secret Manager.
 """
 
+import hashlib
 import json
 import logging
 import os
@@ -41,12 +42,22 @@ def _get_oauth_config() -> dict:
     return json.loads(response.payload.data.decode("UTF-8"))
 
 
+def _safe_secret_id(user_id: str) -> str:
+    """Convert user_id to a Secret Manager compatible ID.
+
+    Secret IDs only allow [a-zA-Z_0-9]. We hash the user_id to handle
+    emails and other special characters.
+    """
+    user_hash = hashlib.sha256(user_id.encode()).hexdigest()[:16]
+    return f"workspace_token_{user_hash}"
+
+
 def _save_user_token(user_id: str, token_data: dict):
     """Save user's refresh token to Secret Manager."""
     from google.cloud import secretmanager
 
     client = secretmanager.SecretManagerServiceClient()
-    secret_id = f"workspace-token-{user_id}"
+    secret_id = _safe_secret_id(user_id)
     parent = f"projects/{PROJECT_ID}"
     secret_path = f"{parent}/secrets/{secret_id}"
 
@@ -70,6 +81,18 @@ def _save_user_token(user_id: str, token_data: dict):
         }
     )
     logger.info(f"Saved token for user: {user_id}")
+
+
+@app.route("/debug")
+def debug():
+    """Debug endpoint to check redirect_uri generation."""
+    return {
+        "url_root": request.url_root,
+        "redirect_uri": request.url_root.rstrip("/") + "/callback",
+        "scheme": request.scheme,
+        "host": request.host,
+        "headers": dict(request.headers),
+    }
 
 
 @app.route("/auth/<user_id>")
@@ -102,6 +125,9 @@ def auth(user_id: str):
         prompt="consent",
         state=state,
     )
+
+    # Save code_verifier for PKCE (needed in callback to exchange code for token)
+    session["code_verifier"] = flow.code_verifier
 
     return redirect(authorization_url)
 
@@ -136,6 +162,9 @@ def callback():
         redirect_uri=request.url_root.rstrip("/") + "/callback",
     )
 
+    # Restore PKCE code_verifier from session
+    flow.code_verifier = session.get("code_verifier")
+
     flow.fetch_token(authorization_response=request.url)
     credentials = flow.credentials
 
@@ -168,7 +197,7 @@ def status(user_id: str):
     from google.cloud import secretmanager
 
     client = secretmanager.SecretManagerServiceClient()
-    secret_name = f"projects/{PROJECT_ID}/secrets/workspace-token-{user_id}/versions/latest"
+    secret_name = f"projects/{PROJECT_ID}/secrets/{_safe_secret_id(user_id)}/versions/latest"
 
     try:
         client.access_secret_version(request={"name": secret_name})
@@ -183,7 +212,7 @@ def revoke(user_id: str):
     from google.cloud import secretmanager
 
     client = secretmanager.SecretManagerServiceClient()
-    secret_name = f"projects/{PROJECT_ID}/secrets/workspace-token-{user_id}"
+    secret_name = f"projects/{PROJECT_ID}/secrets/{_safe_secret_id(user_id)}"
 
     try:
         client.delete_secret(request={"name": secret_name})

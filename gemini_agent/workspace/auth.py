@@ -1,5 +1,6 @@
 """Per-user Google OAuth credentials loaded from Secret Manager."""
 
+import hashlib
 import json
 import logging
 import os
@@ -47,7 +48,8 @@ def get_user_credentials(user_id: str, project_id: str | None = None) -> Credent
     if not project:
         raise WorkspaceAuthError("config_error", "GOOGLE_CLOUD_PROJECT not set")
 
-    secret_name = f"projects/{project}/secrets/workspace-token-{user_id}/versions/latest"
+    user_hash = hashlib.sha256(user_id.encode()).hexdigest()[:16]
+    secret_name = f"projects/{project}/secrets/workspace_token_{user_hash}/versions/latest"
 
     try:
         client = _get_secret_client()
