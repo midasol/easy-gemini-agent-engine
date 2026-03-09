@@ -20,6 +20,8 @@ except ImportError:
 
 from google.adk.agents.llm_agent import Agent
 from google.adk.models import Gemini
+from google.adk.tools import google_search, url_context
+from google.adk.tools.base_tool import BaseTool
 from google.genai import Client, types
 
 # ---------------------------------------------------------------------------
@@ -101,17 +103,31 @@ MODEL_NAME = get_model_name()
 MODEL = GlobalGemini(model=MODEL_NAME)
 
 # ---------------------------------------------------------------------------
-# Built-in Tools & Thinking via generate_content_config
+# CodeExecutionTool: ADK wrapper for Gemini built-in code execution
+# ---------------------------------------------------------------------------
+class CodeExecutionTool(BaseTool):
+    """ADK tool wrapper for Gemini's built-in code execution capability."""
+
+    def __init__(self):
+        super().__init__(name="code_execution", description="code_execution")
+
+    async def process_llm_request(self, *, tool_context, llm_request):
+        llm_request.config = llm_request.config or types.GenerateContentConfig()
+        llm_request.config.tools = llm_request.config.tools or []
+        llm_request.config.tools.append(
+            types.Tool(code_execution=types.ToolCodeExecution())
+        )
+
+
+code_execution = CodeExecutionTool()
+
+# ---------------------------------------------------------------------------
+# Thinking config (no tools — tools go through ADK tool system)
 # ---------------------------------------------------------------------------
 GENERATE_CONTENT_CONFIG = types.GenerateContentConfig(
     thinking_config=types.ThinkingConfig(
         thinking_level="HIGH",
     ),
-    tools=[
-        types.Tool(google_search=types.GoogleSearch()),
-        types.Tool(url_context=types.UrlContext()),
-        types.Tool(code_execution=types.ToolCodeExecution()),
-    ],
 )
 
 # ---------------------------------------------------------------------------
@@ -122,6 +138,7 @@ root_agent = Agent(
     name="gemini_agent",
     description="General-purpose assistant with web search, URL reading, and code execution capabilities",
     instruction="You are a helpful assistant. Use the available tools to provide accurate and comprehensive answers.",
+    tools=[google_search, url_context, code_execution],
     generate_content_config=GENERATE_CONTENT_CONFIG,
 )
 
