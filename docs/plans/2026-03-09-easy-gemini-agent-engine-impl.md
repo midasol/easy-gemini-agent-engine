@@ -52,11 +52,20 @@ Save the **Resource Name** from the output (e.g., `projects/123/locations/us-cen
 
 ## Step 4: Create Authorization Resource
 
-Construct the Authorization URI (replace `YOUR_CLIENT_ID`):
+Construct the Authorization URI with the following parameters:
 
-```
-https://accounts.google.com/o/oauth2/v2/auth?client_id=YOUR_CLIENT_ID&redirect_uri=https%3A%2F%2Fvertexaisearch.cloud.google.com%2Fstatic%2Foauth%2Foauth.html&scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdocuments.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fpresentations.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fspreadsheets.readonly%20https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&include_granted_scopes=true&response_type=code&access_type=offline&prompt=consent
-```
+| Parameter | Value |
+|-----------|-------|
+| Base URL | `https://accounts.google.com/o/oauth2/v2/auth` |
+| `client_id` | Your OAuth Client ID |
+| `redirect_uri` | `https://vertexaisearch.cloud.google.com/static/oauth/oauth.html` |
+| `scope` | `drive.readonly`, `documents.readonly`, `presentations.readonly`, `spreadsheets.readonly`, `cloud-platform` (각각 `https://www.googleapis.com/auth/` 접두사) |
+| `include_granted_scopes` | `true` |
+| `response_type` | `code` |
+| `access_type` | `offline` |
+| `prompt` | `consent` |
+
+> **Note**: `scope`의 여러 스코프 사이 공백은 `%20`으로 인코딩해야 합니다.
 
 Create the authorization resource via REST API:
 

@@ -97,22 +97,20 @@ In Google Cloud Console > APIs & Services > Credentials:
 
 ### Step 2: Construct Authorization URI
 
-Build the Authorization URI with your OAuth Client ID:
+Build the Authorization URI with the following parameters (replace `YOUR_CLIENT_ID`):
 
-```
-https://accounts.google.com/o/oauth2/v2/auth?
-  client_id=YOUR_CLIENT_ID&
-  redirect_uri=https%3A%2F%2Fvertexaisearch.cloud.google.com%2Fstatic%2Foauth%2Foauth.html&
-  scope=https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdrive.readonly%20
-        https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fdocuments.readonly%20
-        https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fpresentations.readonly%20
-        https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fspreadsheets.readonly%20
-        https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fcloud-platform&
-  include_granted_scopes=true&
-  response_type=code&
-  access_type=offline&
-  prompt=consent
-```
+| Parameter | Value |
+|-----------|-------|
+| Base URL | `https://accounts.google.com/o/oauth2/v2/auth` |
+| `client_id` | Your OAuth Client ID |
+| `redirect_uri` | `https://vertexaisearch.cloud.google.com/static/oauth/oauth.html` |
+| `scope` | `https://www.googleapis.com/auth/drive.readonly` `https://www.googleapis.com/auth/documents.readonly` `https://www.googleapis.com/auth/presentations.readonly` `https://www.googleapis.com/auth/spreadsheets.readonly` `https://www.googleapis.com/auth/cloud-platform` |
+| `include_granted_scopes` | `true` |
+| `response_type` | `code` |
+| `access_type` | `offline` |
+| `prompt` | `consent` |
+
+> **Note**: `scope`의 여러 스코프 사이 공백은 `%20`으로 인코딩해야 합니다.
 
 ### Step 3: Create Authorization Resource
 
