@@ -138,6 +138,12 @@ Build the Authorization URI with the following parameters (replace `YOUR_CLIENT_
 
 > **Note**: `scope`의 여러 스코프 사이 공백은 `%20`으로 인코딩해야 합니다.
 
+조합된 URI 예시 (`YOUR_CLIENT_ID` 부분을 실제 Client ID로 교체):
+
+```
+https://accounts.google.com/o/oauth2/v2/auth?client_id=YOUR_CLIENT_ID&redirect_uri=https://vertexaisearch.cloud.google.com/static/oauth/oauth.html&scope=https://www.googleapis.com/auth/drive.readonly%20https://www.googleapis.com/auth/documents.readonly%20https://www.googleapis.com/auth/presentations.readonly%20https://www.googleapis.com/auth/spreadsheets.readonly%20https://www.googleapis.com/auth/cloud-platform&include_granted_scopes=true&response_type=code&access_type=offline&prompt=consent
+```
+
 ### Step 3: Create Authorization Resource
 
 ```bash
