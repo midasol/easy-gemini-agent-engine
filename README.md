@@ -67,7 +67,19 @@ export PROJECT_ID="your-project-id"
 bash scripts/setup_gcp_prerequisites.sh
 ```
 
-This creates: required APIs, service account `agent-engine-sa`, staging bucket, Secret Manager secrets.
+This creates:
+- Required GCP APIs (AI Platform, Secret Manager, Cloud Build, Storage, IAM, Workspace APIs)
+- Service account `agent-engine-sa` with appropriate IAM roles
+- Staging bucket `gs://$PROJECT_ID_cloudbuild`
+- Secret Manager secrets (`gemini-api-key`, `oauth-client-config`)
+
+### Gemini API Key 등록
+
+스크립트 실행 후, [Google AI Studio](https://aistudio.google.com/apikey)에서 발급받은 Gemini API Key를 Secret Manager에 등록해야 합니다:
+
+```bash
+echo "YOUR_GEMINI_API_KEY" | gcloud secrets versions add gemini-api-key --data-file=-
+```
 
 ## 3. Deploy to Agent Engine
 
