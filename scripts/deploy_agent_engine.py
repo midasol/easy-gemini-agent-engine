@@ -31,6 +31,14 @@ def parse_args():
         "--staging-bucket", default=None,
         help="GCS staging bucket (default: gs://<PROJECT_ID>_cloudbuild)",
     )
+    parser.add_argument(
+        "--oauth-client-id", default=None,
+        help="OAuth Client ID for Workspace tools (optional, for request_credential fallback)",
+    )
+    parser.add_argument(
+        "--oauth-client-secret", default=None,
+        help="OAuth Client Secret for Workspace tools (optional, for request_credential fallback)",
+    )
     return parser.parse_args()
 
 
@@ -59,10 +67,13 @@ def main():
     )
 
     # ---------------------------------------------------------------
-    # Agent Engine uses service account auth (not API key).
-    # No env vars needed for authentication.
+    # Environment variables for Agent Engine
     # ---------------------------------------------------------------
     env_vars = {}
+    if args.oauth_client_id:
+        env_vars["OAUTH_CLIENT_ID"] = args.oauth_client_id
+    if args.oauth_client_secret:
+        env_vars["OAUTH_CLIENT_SECRET"] = args.oauth_client_secret
 
     # ---------------------------------------------------------------
     # Prepare agent for deployment
@@ -88,7 +99,6 @@ def main():
         "python-dotenv>=1.0.0",
         "google-api-python-client>=2.100.0",
         "google-auth>=2.20.0",
-        "google-auth-oauthlib>=1.0.0",
     ]
 
     RESOURCE_LIMITS = {"cpu": "2", "memory": "4Gi"}

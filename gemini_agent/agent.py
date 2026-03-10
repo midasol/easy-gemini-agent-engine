@@ -1,7 +1,7 @@
-"""Simple Gemini Agent with built-in tools for Agent Engine deployment.
+"""Gemini Agent with Google Search and Google Workspace tools.
 
-Uses Google Search, URL Context, and Code Execution as built-in Gemini tools.
-Supports both local development and Agent Engine deployment.
+Uses GoogleSearchTool (bypass mode) for AFC compatibility with custom functions.
+Workspace tools use OAuth token injected by Gemini Enterprise via tool_context.state.
 """
 
 import os
@@ -20,14 +20,15 @@ except ImportError:
 
 from google.adk.agents.llm_agent import Agent
 from google.adk.models import Gemini
-from google.adk.tools import google_search, url_context
-from google.adk.tools.base_tool import BaseTool
+from google.adk.tools.google_search_tool import GoogleSearchTool
 from google.genai import Client, types
 
-from gemini_agent.workspace.drive_tools import search_drive
-from gemini_agent.workspace.docs_tools import read_document
-from gemini_agent.workspace.slides_tools import read_presentation
-from gemini_agent.workspace.sheets_tools import read_spreadsheet
+from gemini_agent.workspace import (
+    search_drive,
+    read_document,
+    read_presentation,
+    read_spreadsheet,
+)
 
 # ---------------------------------------------------------------------------
 # Secret Manager helper
@@ -37,12 +38,10 @@ _secretmanager = None
 
 def _get_api_key() -> str | None:
     """Get Gemini API Key from env var or Secret Manager."""
-    # 1. Check environment variable first (local dev or deploy-injected)
     api_key = os.getenv("GEMINI_API_KEY")
     if api_key:
         return api_key
 
-    # 2. Try Secret Manager
     project_id = os.getenv("GOOGLE_CLOUD_PROJECT") or os.getenv("PROJECT_ID")
     if not project_id:
         return None
@@ -68,11 +67,7 @@ def _get_api_key() -> str | None:
 # GlobalGemini: forces global endpoint for Gemini 3 models
 # ---------------------------------------------------------------------------
 class GlobalGemini(Gemini):
-    """Gemini model subclass that forces global endpoint.
-
-    Agent Engine overrides GOOGLE_CLOUD_LOCATION to the deployment region,
-    but Gemini 3 models require the global endpoint.
-    """
+    """Gemini model subclass that forces global endpoint."""
 
     @cached_property
     def api_client(self) -> Client:
@@ -86,9 +81,6 @@ class GlobalGemini(Gemini):
             ),
         }
 
-        # Agent Engine (Vertex AI) does NOT support API keys.
-        # Use API key only for local development (no project set).
-        # On Agent Engine, always use service account auth + global endpoint.
         is_agent_engine = bool(os.getenv("GOOGLE_CLOUD_PROJECT"))
 
         if api_key and not is_agent_engine:
@@ -105,34 +97,16 @@ class GlobalGemini(Gemini):
 # ---------------------------------------------------------------------------
 # Model Configuration
 # ---------------------------------------------------------------------------
-def get_model_name() -> str:
-    return os.getenv("AGENT_MODEL", "gemini-3.1-pro-preview")
-
-
-MODEL_NAME = get_model_name()
+MODEL_NAME = os.getenv("AGENT_MODEL", "gemini-3.1-pro-preview")
 MODEL = GlobalGemini(model=MODEL_NAME)
 
 # ---------------------------------------------------------------------------
-# CodeExecutionTool: ADK wrapper for Gemini built-in code execution
+# Google Search (bypass mode for AFC compatibility with custom functions)
 # ---------------------------------------------------------------------------
-class CodeExecutionTool(BaseTool):
-    """ADK tool wrapper for Gemini's built-in code execution capability."""
-
-    def __init__(self):
-        super().__init__(name="code_execution", description="code_execution")
-
-    async def process_llm_request(self, *, tool_context, llm_request):
-        llm_request.config = llm_request.config or types.GenerateContentConfig()
-        llm_request.config.tools = llm_request.config.tools or []
-        llm_request.config.tools.append(
-            types.Tool(code_execution=types.ToolCodeExecution())
-        )
-
-
-code_execution = CodeExecutionTool()
+google_search = GoogleSearchTool(bypass_multi_tools_limit=True)
 
 # ---------------------------------------------------------------------------
-# Thinking config (no tools — tools go through ADK tool system)
+# Thinking config
 # ---------------------------------------------------------------------------
 GENERATE_CONTENT_CONFIG = types.GenerateContentConfig(
     thinking_config=types.ThinkingConfig(
@@ -146,15 +120,24 @@ GENERATE_CONTENT_CONFIG = types.GenerateContentConfig(
 root_agent = Agent(
     model=MODEL,
     name="gemini_agent",
-    description="General-purpose assistant with web search, URL reading, code execution, and Google Workspace document access",
+    description="General-purpose assistant with web search and Google Workspace document access",
     instruction=(
-        "You are a helpful assistant. Use the available tools to provide accurate and comprehensive answers. "
-        "When users ask about their documents, use search_drive to find files, then use read_document, "
-        "read_presentation, or read_spreadsheet to read the content."
+        "You are a helpful assistant. Use the available tools to provide accurate and comprehensive answers.\n\n"
+        "IMPORTANT: When a user provides a Google Docs/Slides/Sheets URL or asks about their documents:\n"
+        "1. Extract the document ID from the URL (the long string between /d/ and /edit or /view)\n"
+        "2. Call the appropriate tool: read_document for Docs, read_presentation for Slides, read_spreadsheet for Sheets\n"
+        "3. ALWAYS call the tool - never say you cannot access the document without trying first\n\n"
+        "For Google Docs URLs like docs.google.com/document/d/DOCUMENT_ID/edit, call read_document with the document_id\n"
+        "For Google Slides URLs like docs.google.com/presentation/d/PRESENTATION_ID/edit, call read_presentation with the presentation_id\n"
+        "For Google Sheets URLs like docs.google.com/spreadsheets/d/SPREADSHEET_ID/edit, call read_spreadsheet with the spreadsheet_id\n"
+        "To search for files in Drive, use search_drive with a query"
     ),
     tools=[
-        google_search, url_context, code_execution,
-        search_drive, read_document, read_presentation, read_spreadsheet,
+        google_search,
+        search_drive,
+        read_document,
+        read_presentation,
+        read_spreadsheet,
     ],
     generate_content_config=GENERATE_CONTENT_CONFIG,
 )
