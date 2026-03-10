@@ -44,69 +44,13 @@ graph TB
 
 ## Prerequisites
 
+- Python 3.11+
+- [uv](https://docs.astral.sh/uv/) package manager
+- [Google Cloud CLI](https://cloud.google.com/sdk/docs/install) (`gcloud`) installed and authenticated
 - Google Cloud project with billing enabled
 - Gemini Enterprise app (for end-user access)
 
-## 1. Environment Setup
-
-### macOS
-
-```bash
-# Install Homebrew (if not installed)
-/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
-
-# Install Git, Python 3.11+, uv, Google Cloud CLI
-brew install git python@3.11 uv
-brew install --cask google-cloud-sdk
-
-# Authenticate gcloud
-gcloud auth login
-gcloud auth application-default login
-```
-
-### Windows
-
-```powershell
-# Install Git
-winget install Git.Git
-
-# Install Python 3.11+
-winget install Python.Python.3.11
-
-# Install uv
-powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
-
-# Install Google Cloud CLI
-# Download from: https://cloud.google.com/sdk/docs/install#windows
-# Or use winget:
-winget install Google.CloudSDK
-
-# Authenticate gcloud (restart terminal after installation)
-gcloud auth login
-gcloud auth application-default login
-```
-
-### Linux (Debian/Ubuntu)
-
-```bash
-# Install Git, Python 3.11+
-sudo apt update
-sudo apt install -y git python3.11 python3.11-venv
-
-# Install uv
-curl -LsSf https://astral.sh/uv/install.sh | sh
-
-# Install Google Cloud CLI
-curl https://sdk.cloud.google.com | bash
-exec -l $SHELL  # Restart shell
-gcloud init
-
-# Authenticate gcloud
-gcloud auth login
-gcloud auth application-default login
-```
-
-## 2. Clone & Install
+## 1. Clone & Install
 
 ```bash
 git clone https://github.com/midasol/easy-gemini-agent-engine.git
@@ -116,7 +60,7 @@ cd easy-gemini-agent-engine
 uv sync
 ```
 
-## 3. GCP Setup
+## 2. GCP Setup
 
 ```bash
 export PROJECT_ID="your-project-id"
@@ -125,7 +69,7 @@ bash scripts/setup_gcp_prerequisites.sh
 
 This creates: required APIs, service account `agent-engine-sa`, staging bucket, Secret Manager secrets.
 
-## 4. Deploy to Agent Engine
+## 3. Deploy to Agent Engine
 
 ### New deployment
 
@@ -148,7 +92,7 @@ export RESOURCE_NAME="projects/.../reasoningEngines/..."
 uv run python scripts/test_agent_engine.py
 ```
 
-## 5. Gemini Enterprise Integration
+## 4. Gemini Enterprise Integration
 
 To enable Google Workspace document access for end users:
 
