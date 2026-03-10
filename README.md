@@ -44,43 +44,113 @@ graph TB
 
 ## Prerequisites
 
-- Python 3.11+
 - Google Cloud project with billing enabled
-- `gcloud` CLI installed and authenticated
-- OAuth 2.0 Client ID (for Workspace tools)
 - Gemini Enterprise app (for end-user access)
 
-## Quick Start
+## 1. Environment Setup
 
-### 1. Set up GCP resources
+### macOS
+
+```bash
+# Install Homebrew (if not installed)
+/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"
+
+# Install Git, Python 3.11+, uv, Google Cloud CLI
+brew install git python@3.11 uv
+brew install --cask google-cloud-sdk
+
+# Authenticate gcloud
+gcloud auth login
+gcloud auth application-default login
+```
+
+### Windows
+
+```powershell
+# Install Git
+winget install Git.Git
+
+# Install Python 3.11+
+winget install Python.Python.3.11
+
+# Install uv
+powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"
+
+# Install Google Cloud CLI
+# Download from: https://cloud.google.com/sdk/docs/install#windows
+# Or use winget:
+winget install Google.CloudSDK
+
+# Authenticate gcloud (restart terminal after installation)
+gcloud auth login
+gcloud auth application-default login
+```
+
+### Linux (Debian/Ubuntu)
+
+```bash
+# Install Git, Python 3.11+
+sudo apt update
+sudo apt install -y git python3.11 python3.11-venv
+
+# Install uv
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install Google Cloud CLI
+curl https://sdk.cloud.google.com | bash
+exec -l $SHELL  # Restart shell
+gcloud init
+
+# Authenticate gcloud
+gcloud auth login
+gcloud auth application-default login
+```
+
+## 2. Clone & Install
+
+```bash
+git clone https://github.com/midasol/easy-gemini-agent-engine.git
+cd easy-gemini-agent-engine
+
+# Install Python dependencies
+uv sync
+```
+
+## 3. GCP Setup
 
 ```bash
 export PROJECT_ID="your-project-id"
 bash scripts/setup_gcp_prerequisites.sh
 ```
 
-### 2. Deploy to Agent Engine
+This creates: required APIs, service account `agent-engine-sa`, staging bucket, Secret Manager secrets.
+
+## 4. Deploy to Agent Engine
+
+### New deployment
 
 ```bash
-python scripts/deploy_agent_engine.py --project $PROJECT_ID
+uv run python scripts/deploy_agent_engine.py --project $PROJECT_ID
 ```
 
-Save the `Resource Name` from the output — you'll need it for Gemini Enterprise registration.
+Save the **Resource Name** from the output (e.g., `projects/123/locations/us-central1/reasoningEngines/456`).
 
-### 3. Set up OAuth for Workspace tools
+### Update existing deployment
 
-See [Gemini Enterprise Integration](#gemini-enterprise-integration) below.
+```bash
+uv run python scripts/deploy_agent_engine.py --project $PROJECT_ID --update <RESOURCE_NAME>
+```
 
-### 4. Test the deployed agent
+### Test the deployed agent
 
 ```bash
 export RESOURCE_NAME="projects/.../reasoningEngines/..."
-python scripts/test_agent_engine.py
+uv run python scripts/test_agent_engine.py
 ```
 
-## Gemini Enterprise Integration
+## 5. Gemini Enterprise Integration
 
-To enable Google Workspace document access for end users, you need to:
+To enable Google Workspace document access for end users:
 
 1. **Create OAuth 2.0 credentials**
 2. **Create an Authorization resource** in Gemini Enterprise
@@ -88,7 +158,7 @@ To enable Google Workspace document access for end users, you need to:
 
 ### Step 1: Create OAuth 2.0 Client
 
-In Google Cloud Console > APIs & Services > Credentials:
+In [Google Cloud Console](https://console.cloud.google.com/apis/credentials) > APIs & Services > Credentials:
 
 - Create an **OAuth 2.0 Client ID** (Web application)
 - Add **Authorized redirect URIs**:
@@ -138,7 +208,6 @@ curl -X POST \
 
 ```bash
 APP_ID="your-gemini-enterprise-app-id"
-REASONING_ENGINE_ID="your-reasoning-engine-id"
 
 curl -X POST \
   -H "Authorization: Bearer $(gcloud auth print-access-token)" \
@@ -210,12 +279,6 @@ easy-gemini-agent-engine/
 | `scripts/deploy_agent_engine.py` | Deploy or update Agent Engine |
 | `scripts/test_agent_engine.py` | Test deployed agent |
 | `scripts/cleanup_agent_engines.py` | Delete all Agent Engines in project |
-
-## Update Existing Deployment
-
-```bash
-python scripts/deploy_agent_engine.py --project $PROJECT_ID --update <RESOURCE_NAME>
-```
 
 ## Local Development
 
